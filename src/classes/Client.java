@@ -25,22 +25,27 @@ public class Client extends JFrame {
     Socket socket;
     Display display;
     ClientReader clientReader;
+    ClientWriter clientWriter;
     BufferedImage image;
     Graphics imageGraphics;
+    String dataToServer;
     private final int port = 60000;
     private final int width = 800;
     private final int height = 800;
     
     public Client(String address) throws UnknownHostException, IOException {
+	dataToServer = "";
 	socket = new Socket(address,port);
 	initialize();
 	clientReader = new ClientReader();
 	clientReader.start();
+	clientWriter = new ClientWriter();
+	clientWriter.start();
 	//implement image read
 	
 	
 	setTitle("CooperativePaint");
-	setSize(800, 800);
+	setSize(width, height);
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	setLayout(new BorderLayout());
 	setResizable(false);
@@ -64,15 +69,16 @@ public class Client extends JFrame {
 	display.updateDisplay(data);
     }
     
-    public void sendDataToServer(String data) {
-	DataOutputStream output;
-	try {
-	    output = new DataOutputStream(socket.getOutputStream());
-	    output.writeBytes(data);
-	} catch (IOException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	}
+    public synchronized String getDataToServer() {
+	return dataToServer;
+    }
+    
+    public void clearDataToServer() {
+	dataToServer = "";
+    }
+    
+    public synchronized void addToDataToServer(String data) {
+	dataToServer += data;
     }
     
     private class Display extends JPanel {
@@ -99,7 +105,11 @@ public class Client extends JFrame {
 		    pmouseY = mouseY;
 		    mouseX = e0.getX();
 		    mouseY = e0.getY();
-		    sendDataToServer("l " + pmouseX + " " + pmouseY + " " + mouseX + " " + mouseY + "\n");
+		    if(getDataToServer().equals("")) {
+			addToDataToServer("l " + pmouseX + " " + pmouseY + " " + mouseX + " " + mouseY);
+		    }else{
+			addToDataToServer(" l " + pmouseX + " " + pmouseY + " " + mouseX + " " + mouseY);
+		    }
 		}
 
 		@Override
@@ -134,11 +144,29 @@ public class Client extends JFrame {
 			    Integer.parseInt(commands[i+3]));    
 		}
 		Client.this.repaint();
-
 	    }
 	}
     }
-
+    
+    private class ClientWriter extends Thread {
+	
+	public void run() {
+	    while(!socket.isClosed()) {
+		if(!getDataToServer().equals("")) {
+		    try {
+			DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+			output.writeBytes(getDataToServer() + "\n");
+			clearDataToServer();
+		    } catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		    }
+		}
+	    }
+	}
+	
+    }
+    
     private class ClientReader extends Thread {
 		
 	public void run() {
