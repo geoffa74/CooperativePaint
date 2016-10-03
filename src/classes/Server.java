@@ -49,18 +49,10 @@ public class Server extends Thread {
 	String[] commands = data.split(" ");
 	for(int i = 0; i < commands.length; i += 5) {
 	    imageGraphics.setColor(Color.BLACK);
-	    switch(commands[i]) {
-	    case "l":
-		imageGraphics.drawLine(Integer.parseInt(commands[i+1]),
+	    imageGraphics.drawLine(Integer.parseInt(commands[i+1]),
 			Integer.parseInt(commands[i+2]),
 			Integer.parseInt(commands[i+3]), 
 			Integer.parseInt(commands[i+4]));
-		break;
-	    case "p":
-		image.setRGB(Integer.parseInt(commands[i+1]), 
-			Integer.parseInt(commands[i+2]),
-			Integer.parseInt(commands[i+3]));    
-	    }
 	}
     }
     
